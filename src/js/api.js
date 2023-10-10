@@ -17,8 +17,9 @@ export const options = {
 export async function getImages(query) {
   options.params.q = query;
   const url = `${BASE_URL}?${new URLSearchParams(options.params).toString()}`;
+  
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url); // Use await here
     return response.data;
   } catch (error) {
     console.error('Error fetching images:', error);

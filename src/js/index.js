@@ -3,6 +3,8 @@ import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import { elements } from './elements';
 import { BASE_URL, options, getImages } from './api';
+import axios from 'axios';
+
 
 const { galleryEl, searchInput, searchForm, loaderEl } = elements;
 
