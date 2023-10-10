@@ -1,18 +1,25 @@
-import axios from 'axios';
-export const BASE_URL = 'https://pixabay.com/api/';
-export const API_KEY = '39802923-d8b3f86254aa0fe1b36a34a60';
-export const options = {
-  params: {
-    key: API_KEY,
-    image_type: 'photo',
-    orientation: 'horizontal',
-    safesearch: true,
-    per_page: 40,
-    page: 1,
-    q: '',
-  },
-};
-searchForm.addEventListener('submit', onFormSybmit);
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import { elements } from './elements';
+import { BASE_URL, options, getImages } from './api';
+
+const { galleryEl, searchInput, searchForm, loaderEl } = elements;
+
+let totalHits = 0;
+let isLoadingMore = false;
+let reachedEnd = false;
+
+const lightbox = new SimpleLightbox('.lightbox', {
+  captionsData: 'alt',
+  captionDelay: 250,
+  enableKeyboard: true,
+  showCounter: false,
+  scrollZoom: false,
+  close: false,
+});
+
+searchForm.addEventListener('submit', onFormSubmit);
 window.addEventListener('scroll', onScrollHandler);
 document.addEventListener('DOMContentLoaded', hideLoader);
 
@@ -71,12 +78,16 @@ async function loadMore() {
   options.params.page += 1;
   try {
     showLoader();
-    const response = await axios.get(BASE_URL, options);
-    const hits = response.data.hits;
+    const searchQuery = searchInput.value.trim();
+    if (!searchQuery) {
+      Notify.failure('please input value');
+    }
+    const response = await axios.get(BASE_URL, { params: options.params }); 
+    const data = response.data;
+    const hits = data.hits;
     renderGallery(hits);
   } catch (err) {
-    Notify.failure(err);
-    hideLoader();
+    Notify.failure(err.message);
   } finally {
     hideLoader();
     isLoadingMore = false;
@@ -96,7 +107,7 @@ function onScrollHandler() {
   }
 }
 
-async function onFormSybmit(e) {
+async function onFormSubmit(e) {
   e.preventDefault();
   options.params.q = searchInput.value.trim();
   if (options.params.q === '') {
@@ -108,9 +119,10 @@ async function onFormSybmit(e) {
 
   try {
     showLoader();
-    const response = await axios.get(BASE_URL, options);
-    totalHits = response.data.totalHits;
-    const hits = response.data.hits;
+    const response = await axios.get(BASE_URL, { params: options.params }); 
+    const data = response.data;
+    totalHits = data.totalHits;
+    const hits = data.hits;
     if (hits.length === 0) {
       Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
@@ -120,10 +132,9 @@ async function onFormSybmit(e) {
       renderGallery(hits);
     }
     searchInput.value = '';
-    hideLoader();
   } catch (err) {
-    Notify.failure(err);
+    Notify.failure(err.message);
+  } finally {
     hideLoader();
   }
 }
-
