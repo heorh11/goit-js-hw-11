@@ -5,7 +5,6 @@ import { elements } from './elements';
 import { BASE_URL, options, getImages } from './api';
 import axios from 'axios';
 
-
 const { galleryEl, searchInput, searchForm, loaderEl } = elements;
 
 let totalHits = 0;
@@ -82,9 +81,11 @@ async function loadMore() {
     showLoader();
     const searchQuery = searchInput.value.trim();
     if (!searchQuery) {
-      Notify.failure('please input value');
+      Notify.info('Hey, search is empty. Please enter a query.');
+      hideLoader();
+      return;
     }
-    const response = await axios.get(BASE_URL, { params: options.params }); 
+    const response = await axios.get(BASE_URL, { params: options.params });
     const data = response.data;
     const hits = data.hits;
     renderGallery(hits);
@@ -111,17 +112,22 @@ function onScrollHandler() {
 
 async function onFormSubmit(e) {
   e.preventDefault();
-  options.params.q = searchInput.value.trim();
-  if (options.params.q === '') {
+  const searchQuery = searchInput.value.trim();
+
+  if (searchQuery === '') {
+    // Display a notification if the search query is empty
+    Notify.info('Hey, search is empty. Please enter a query.');
     return;
   }
+
+  options.params.q = searchQuery;
   options.params.page = 1;
   galleryEl.innerHTML = '';
   reachedEnd = false;
 
   try {
     showLoader();
-    const response = await axios.get(BASE_URL, { params: options.params }); 
+    const response = await axios.get(BASE_URL, { params: options.params });
     const data = response.data;
     totalHits = data.totalHits;
     const hits = data.hits;
