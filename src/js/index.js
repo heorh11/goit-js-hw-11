@@ -21,7 +21,6 @@ const lightbox = new SimpleLightbox('.lightbox', {
 });
 
 searchForm.addEventListener('submit', onFormSubmit);
-window.addEventListener('scroll', onScrollHandler);
 document.addEventListener('DOMContentLoaded', hideLoader);
 
 function showLoader() {
@@ -74,41 +73,42 @@ function renderGallery(hits) {
   lightbox.refresh();
 }
 
-async function loadMore() {
+function loadMoreImages() {
+  if (isLoadingMore || reachedEnd) {
+    return;
+  }
+
   isLoadingMore = true;
   options.params.page += 1;
-  try {
-    showLoader();
-    const searchQuery = searchInput.value.trim();
-    if (!searchQuery) {
-      Notify.info('Hey, search is empty. Please enter a query.');
+
+  showLoader();
+
+  axios
+    .get(BASE_URL, { params: options.params })
+    .then(response => {
+      const data = response.data;
+      const hits = data.hits;
+      renderGallery(hits);
+    })
+    .catch(err => {
+      Notify.failure(err.message);
+    })
+    .finally(() => {
       hideLoader();
-      return;
-    }
-    const response = await axios.get(BASE_URL, { params: options.params });
-    const data = response.data;
-    const hits = data.hits;
-    renderGallery(hits);
-  } catch (err) {
-    Notify.failure(err.message);
-  } finally {
-    hideLoader();
-    isLoadingMore = false;
-  }
+      isLoadingMore = false;
+    });
 }
 
-function onScrollHandler() {
+window.addEventListener('scroll', () => {
   const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
   const scrollThreshold = 300;
   if (
     scrollTop + clientHeight >= scrollHeight - scrollThreshold &&
-    galleryEl.innerHTML !== '' &&
-    !isLoadingMore &&
-    !reachedEnd
+    !isLoadingMore
   ) {
-    loadMore();
+    loadMoreImages();
   }
-}
+});
 
 async function onFormSubmit(e) {
   e.preventDefault();
@@ -127,8 +127,7 @@ async function onFormSubmit(e) {
 
   try {
     showLoader();
-    const response = await axios.get(BASE_URL, { params: options.params });
-    const data = response.data;
+    const data = await getImages(searchQuery);
     totalHits = data.totalHits;
     const hits = data.hits;
     if (hits.length === 0) {
@@ -146,3 +145,4 @@ async function onFormSubmit(e) {
     hideLoader();
   }
 }
+
